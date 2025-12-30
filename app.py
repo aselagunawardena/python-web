@@ -1,15 +1,19 @@
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, request, send_from_directory
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='')
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    """Serve the main HTML file"""
+    return send_from_directory('templates', 'index.html')
 
-@app.route('/display', methods=['POST'])
-def display():
-    text = request.form.get('text', '')
-    return render_template('index.html', displayed_text=text)
+@app.route('/api/display', methods=['POST'])
+def display_text():
+    """API endpoint - receives text and returns it as JSON"""
+    data = request.get_json()
+    text = data.get('text', '')
+    return jsonify({'text': text})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
