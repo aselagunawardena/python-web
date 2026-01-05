@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>quantumlayer</title>
+    <title>About — Routes</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -41,17 +41,49 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div class="container">
-        <h1>✨ quantumlayer ✨</h1>
-        
-        <div class="input-section">
-            <textarea id="textInput" placeholder="Type something fun here..."></textarea>
-            <button onclick="displayText()">Display Text</button>
-        </div>
-        
-        <div id="outputSection" class="output-section" style="display: none;">
-            <h2>Your Text:</h2>
-            <div id="displayBox" class="display-box"></div>
-        </div>
+        <h1>About — Flask Routes</h1>
+        <p>This page shows simple examples of Flask routes and how to call them.</p>
+
+        <h2>1) Basic route (GET)</h2>
+        <pre><code>from flask import Flask
+app = Flask(__name__)
+
+@app.route('/hello')
+def hello():
+    return 'Hello, world!'
+</code></pre>
+
+        <h2>2) Route with methods (POST example)</h2>
+        <pre><code>@app.route('/api/display', methods=['POST'])
+def display_text():
+    data = request.get_json()
+    return jsonify({'text': data.get('text', '')})
+</code></pre>
+
+        <h2>How to call the POST route</h2>
+        <p>Using <strong>curl</strong>:</p>
+        <pre><code>curl -X POST http://localhost:5000/api/display \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello from curl"}'
+</code></pre>
+
+        <p>Using JavaScript <strong>fetch</strong>:</p>
+        <pre><code>fetch('/api/display', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ text: 'Hello from fetch' })
+})
+.then(r =&gt; r.json())
+.then(data =&gt; console.log(data))
+</code></pre>
+
+        <h2>3) Route variables</h2>
+        <pre><code>@app.route('/user/&lt;username&gt;')
+def profile(username):
+    return f"Profile: {username}"
+</code></pre>
+
+        <p>That's enough to get started. Return to <a href="/">home</a>.</p>
     </div>
 
     <script src="/script.js"></script>

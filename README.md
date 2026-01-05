@@ -1,4 +1,4 @@
-# Fun Text Display Website
+# quantumlayer Website
 
 A simple Python web application to learn Flask basics!
 
@@ -35,8 +35,8 @@ A simple Python web application to learn Flask basics!
   - `@app.route('/display')` - Handles form submission
   
 - `templates/index.html` - The webpage
-  - Form to submit text
-  - Display area for the result
+   - Form to submit text
+   - Display area for the result
 
 Have fun exploring! Try modifying the colors, adding more features, or experimenting with the code.
 
