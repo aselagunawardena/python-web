@@ -32,9 +32,39 @@
         <ul class="sidebar-menu">
             <li><a href="/">Home</a></li>
             <li><a href="/about">About</a></li>
-            <li><a href="#settings">Settings</a></li>
+            <li><a href="/online-shooter">Online Shooter</a></li>
+            <li><a href="#" id="settingsLink">Settings</a></li>
             <li><a href="#contact">Contact</a></li>
         </ul>
+
+        <div class="settings-panel" id="settingsPanel">
+            <h4 style="margin:0 0 10px 0;">Backgrounds</h4>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-default" value="bg-default">
+                <label for="bg-default">Default</label>
+                <div class="bg-swatch" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+            </div>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-night" value="bg-night">
+                <label for="bg-night">Night</label>
+                <div class="bg-swatch" style="background: radial-gradient(circle at 10% 20%, #1f2330 0%, #0b1020 60%);"></div>
+            </div>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-forest" value="bg-forest">
+                <label for="bg-forest">Forest</label>
+                <div class="bg-swatch" style="background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%);"></div>
+            </div>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-sunset" value="bg-sunset">
+                <label for="bg-sunset">Sunset</label>
+                <div class="bg-swatch" style="background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 60%);"></div>
+            </div>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-solid" value="bg-solid">
+                <label for="bg-solid">Solid</label>
+                <div class="bg-swatch" style="background: #222831;"></div>
+            </div>
+        </div>
     </aside>
 
     <!-- Overlay for sidebar -->
