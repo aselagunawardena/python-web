@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Fun</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .graph-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .graph-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .graph-card h3 {
+            margin-top: 0;
+            color: #fff;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            margin-bottom: 15px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .controls button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .controls button:hover {
+            background: #764ba2;
+        }
+        .equation-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .equation-input-group input {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+        .equation-input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .equation-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.2);
+        }
+        .validation-result {
+            padding: 12px 14px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-weight: 500;
+            display: none;
+        }
+        .validation-result.valid {
+            display: block;
+            background: rgba(76, 175, 80, 0.2);
+            color: #81c784;
+            border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+        .validation-result.invalid {
+            display: block;
+            background: rgba(244, 67, 54, 0.2);
+            color: #e57373;
+            border: 1px solid rgba(244, 67, 54, 0.4);
+        }
+        .equation-info {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            color: #ccc;
+            font-size: 13px;
+            line-height: 1.5;
+            display: none;
+        }
+        .equation-info.show {
+            display: block;
+        }
+        .coordinates-table {
+            margin-top: 20px;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        .coordinates-table h4 {
+            margin: 0 0 12px 0;
+            color: #fff;
+            font-size: 14px;
+        }
+        .coordinates-display {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .coordinate-pair {
+            background: rgba(102, 126, 234, 0.15);
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            font-size: 13px;
+            color: #ccc;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+        .coordinate-pair strong {
+            color: #4facfe;
+            margin-right: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <button class="hamburger" id="hamburgerBtn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="navbar-logo">✨ quantumlayer</div>
+            <div class="navbar-search">
+                <input type="text" id="searchInput" placeholder="Search...">
+                <button class="search-btn">🔍</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Menu (hidden by default) -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>Menu</span>
+            <button class="close-btn" id="closeBtn">✕</button>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/graph-fun">Graph Fun</a></li>
+            <li><a href="/online-shooter">Online Shooter</a></li>
+            <li><a href="#" id="settingsLink">Settings</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+
+        <div class="settings-panel" id="settingsPanel">
+            <h4 style="margin:0 0 10px 0;">Backgrounds</h4>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-default" value="bg-default">
+                <label for="bg-default">Default</label>
+                <div class="bg-swatch" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+            </div>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-night" value="bg-night">
+                <label for="bg-night">Night</label>
+                <div class="bg-swatch" style="background: radial-gradient(circle at 10% 20%, #1f2330 0%, #0b1020 60%);"></div>
+            </div>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-forest" value="bg-forest">
+                <label for="bg-forest">Forest</label>
+                <div class="bg-swatch" style="background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%);"></div>
+            </div>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-sunset" value="bg-sunset">
+                <label for="bg-sunset">Sunset</label>
+                <div class="bg-swatch" style="background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 60%);"></div>
+            </div>
+            <div class="bg-option">
+                <input type="radio" name="bg" id="bg-solid" value="bg-solid">
+                <label for="bg-solid">Solid</label>
+                <div class="bg-swatch" style="background: #222831;"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Overlay for sidebar -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="graph-container">
+        <h1>📊 Graph Fun</h1>
+        
+        <div class="graph-card">
+            <h3>📐 Linear Equation Validator</h3>
+            <p style="color: #ccc; margin-top: 0; font-size: 13px;">Enter an equation like <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">y=2x-1</code> or <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">y=x+3</code></p>
+            <div class="equation-input-group">
+                <input 
+                    type="text" 
+                    id="equationInput" 
+                    placeholder="e.g., y=2x-1 or y=-0.5x+4"
+                    onkeypress="if(event.key==='Enter') validateEquation()"
+                >
+                <button onclick="validateEquation()">Validate & Plot</button>
+            </div>
+            <div class="validation-result" id="validationResult"></div>
+            <div class="equation-info" id="equationInfo"></div>
+            <div class="chart-wrapper" id="equationChartWrapper" style="display: none;">
+                <canvas id="equationChart"></canvas>
+            </div>
+            <div class="coordinates-table" id="coordinatesTable" style="display: none;">
+                <h4>📍 Coordinate Points (10 samples)</h4>
+                <div class="coordinates-display" id="coordinatesDisplay">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/script.js"></script>
+    <script>
+        // Global chart references
+        let equationChartInstance = null;
+
+        // Linear Equation Validator
+
+        function validateEquation() {
+            const input = document.getElementById('equationInput').value.trim();
+            const resultDiv = document.getElementById('validationResult');
+            const infoDiv = document.getElementById('equationInfo');
+            const chartWrapper = document.getElementById('equationChartWrapper');
+
+            // Reset messages
+            resultDiv.className = 'validation-result';
+            infoDiv.className = 'equation-info';
+            chartWrapper.style.display = 'none';
+
+            if (!input) {
+                resultDiv.textContent = '⚠️ Please enter an equation';
+                resultDiv.classList.add('invalid');
+                return;
+            }
+
+            const result = parseLinearEquation(input);
+            
+            if (result.valid) {
+                resultDiv.textContent = `✅ Valid Linear Equation! (y = ${result.slope}x + ${result.intercept})`;
+                resultDiv.classList.add('valid');
+                
+                infoDiv.classList.add('show');
+                infoDiv.innerHTML = `
+                    <strong>Equation Details:</strong><br>
+                    Slope (m): <strong>${result.slope}</strong><br>
+                    Y-intercept (b): <strong>${result.intercept}</strong><br>
+                    Form: <strong>y = ${result.slope}x ${result.intercept >= 0 ? '+' : ''} ${result.intercept}</strong>
+                `;
+
+                // Plot the equation
+                plotEquation(result.slope, result.intercept);
+            } else {
+                resultDiv.textContent = `❌ ${result.error}`;
+                resultDiv.classList.add('invalid');
+            }
+        }
+
+        function parseLinearEquation(equation) {
+            // Remove spaces
+            equation = equation.replace(/\s+/g, '');
+            
+            // Check if it contains 'y='
+            if (!equation.includes('y=')) {
+                return { valid: false, error: 'Equation must contain "y="' };
+            }
+
+            // Split by '='
+            const parts = equation.split('=');
+            if (parts.length !== 2 || parts[0] !== 'y') {
+                return { valid: false, error: 'Left side must be "y"' };
+            }
+
+            const rightSide = parts[1];
+
+            // Parse the right side to extract slope and intercept
+            // Valid linear forms: mx+b, mx-b, m*x+b, m*x-b, x+b, x-b, mx, x, b
+            
+            try {
+                // Replace * with empty (handle cases like 2*x)
+                let expr = rightSide.replace(/\*/g, '');
+                
+                // Initialize slope and intercept
+                let slope = 0;
+                let intercept = 0;
+                let foundX = false;
+
+                // Check if x exists
+                if (expr.includes('x')) {
+                    foundX = true;
+                    // Split by x
+                    const xParts = expr.split('x');
+                    const beforeX = xParts[0];
+                    const afterX = xParts[1];
+
+                    // Parse slope (before x)
+                    if (beforeX === '' || beforeX === '+') {
+                        slope = 1;
+                    } else if (beforeX === '-') {
+                        slope = -1;
+                    } else {
+                        slope = parseFloat(beforeX);
+                        if (isNaN(slope)) {
+                            return { valid: false, error: 'Invalid coefficient for x' };
+                        }
+                    }
+
+                    // Parse intercept (after x)
+                    if (afterX === '') {
+                        intercept = 0;
+                    } else {
+                        intercept = parseFloat(afterX);
+                        if (isNaN(intercept)) {
+                            return { valid: false, error: 'Invalid intercept value' };
+                        }
+                    }
+                } else {
+                    // No x, must be just a constant (valid linear with slope 0)
+                    intercept = parseFloat(expr);
+                    if (isNaN(intercept)) {
+                        return { valid: false, error: 'Invalid constant value' };
+                    }
+                    slope = 0;
+                }
+
+                // Round to reasonable precision
+                slope = Math.round(slope * 10000) / 10000;
+                intercept = Math.round(intercept * 10000) / 10000;
+
+                return { valid: true, slope, intercept };
+            } catch (e) {
+                return { valid: false, error: 'Could not parse equation' };
+            }
+        }
+
+        function plotEquation(slope, intercept) {
+            const chartWrapper = document.getElementById('equationChartWrapper');
+            const coordinatesTable = document.getElementById('coordinatesTable');
+            const coordinatesDisplay = document.getElementById('coordinatesDisplay');
+            const canvas = document.getElementById('equationChart');
+
+            // Calculate 10 sample coordinates for validation
+            const samplePoints = [];
+            for (let i = 0; i < 10; i++) {
+                const x = -5 + i;
+                const y = slope * x + intercept;
+                samplePoints.push({
+                    x: Math.round(x * 100) / 100,
+                    y: Math.round(y * 100) / 100
+                });
+            }
+
+            // Populate coordinates display horizontally
+            coordinatesDisplay.innerHTML = samplePoints.map(point => `
+                <div class="coordinate-pair">
+                    <strong>x:</strong>${point.x} <strong>y:</strong>${point.y}
+                </div>
+            `).join('');
+
+            // Calculate points for the line chart
+            const xMin = -10;
+            const xMax = 10;
+            const points = [];
+            
+            for (let x = xMin; x <= xMax; x += 0.5) {
+                const y = slope * x + intercept;
+                points.push(y);
+            }
+
+            const labels = [];
+            for (let x = xMin; x <= xMax; x += 0.5) {
+                labels.push(x.toFixed(1));
+            }
+
+            if (equationChartInstance) {
+                equationChartInstance.destroy();
+            }
+
+            const ctx = canvas.getContext('2d');
+            equationChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `y = ${slope}x ${intercept >= 0 ? '+' : ''} ${intercept}`,
+                        data: points,
+                        borderColor: '#4facfe',
+                        backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                        borderWidth: 3,
+                        tension: 0,
+                        fill: true,
+                        pointBackgroundColor: '#00f2fe',
+                        pointBorderColor: '#4facfe',
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: '#ffd600'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+
+            chartWrapper.style.display = 'block';
+            coordinatesTable.style.display = 'block';
+        }
+
+        // Initialize charts on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Equation validator is ready
+        });
+    </script>
+</body>
+</html>
