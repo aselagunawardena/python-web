@@ -370,12 +370,12 @@
         
         <div class="graph-card">
             <h3>📐 Linear Equation Validator</h3>
-            <p style="color: #ccc; margin-top: 0; font-size: 13px;">Enter an equation like <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">y=2x-1</code> or <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">y=x+3</code></p>
+            <p style="color: #ccc; margin-top: 0; font-size: 13px;">Enter an equation like <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">y=2x-1</code>, <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">-y=x+3</code>, or <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">-3y=2x-1</code></p>
             <div class="equation-input-group">
                 <input 
                     type="text" 
                     id="equationInput" 
-                    placeholder="e.g., y=2x-1 or y=-0.5x+4"
+                    placeholder="e.g., y=2x-1, -y=x+4, or -3y=2x-1"
                     onkeypress="if(event.key==='Enter') validateEquation()"
                 >
                 <button onclick="validateEquation()">Validate & Plot</button>
@@ -463,30 +463,46 @@
             const result = parseLinearEquation(input);
             
             if (result.valid) {
-                resultDiv.textContent = `✅ Valid Linear Equation! (y = ${result.slope}x + ${result.intercept})`;
+                // Format slope and intercept as fractions
+                const slopeDisplay = formatAsFraction(result.slope);
+                const interceptDisplay = formatAsFraction(result.intercept);
+                
+                resultDiv.textContent = `✅ Valid Linear Equation! (y = ${slopeDisplay}x + ${interceptDisplay})`;
                 resultDiv.classList.add('valid');
                 
                 infoDiv.classList.add('show');
                 let infoHTML = '';
                 
                 // Show conversion steps if equation was converted
-                if (result.converted) {
+                if (result.converted && result.conversionSteps && result.conversionSteps.length > 0) {
                     infoHTML += `
                         <strong>⚙️ Conversion Steps:</strong><br>
                         <div style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin: 8px 0; line-height: 1.8;">
-                            1. Original: <strong>${result.originalEquation}</strong><br>
-                            2. Multiply both sides by -1:<br>
-                            &nbsp;&nbsp;&nbsp;<strong>-1 × (-y) = -1 × (${result.originalRight})</strong><br>
-                            3. Simplified: <strong>${result.convertedEquation}</strong>
+                            ${result.conversionSteps.map((step, index) => `${index + 1}. ${step}`).join('<br>')}
                         </div>
                     `;
                 }
                 
+                // Build the equation form display
+                let equationForm = 'y = ';
+                if (result.slope === 0) {
+                    equationForm += interceptDisplay;
+                } else {
+                    equationForm += slopeDisplay + 'x';
+                    if (result.intercept !== 0) {
+                        equationForm += result.intercept >= 0 ? ' + ' + interceptDisplay : ' - ' + formatAsFraction(Math.abs(result.intercept));
+                    }
+                }
+                
+                // Show both fraction and decimal
+                const slopeDecimal = result.slope.toFixed(4);
+                const interceptDecimal = result.intercept.toFixed(4);
+                
                 infoHTML += `
                     <strong>Equation Details:</strong><br>
-                    Slope (m): <strong>${result.slope}</strong><br>
-                    Y-intercept (b): <strong>${result.intercept}</strong><br>
-                    Form: <strong>y = ${result.slope}x ${result.intercept >= 0 ? '+' : ''} ${result.intercept}</strong>
+                    Slope (m): <strong>${slopeDisplay}</strong> ${slopeDisplay !== slopeDecimal ? `<span style="color: #aaa;">(≈ ${slopeDecimal})</span>` : ''}<br>
+                    Y-intercept (b): <strong>${interceptDisplay}</strong> ${interceptDisplay !== interceptDecimal ? `<span style="color: #aaa;">(≈ ${interceptDecimal})</span>` : ''}<br>
+                    Form: <strong>${equationForm}</strong>
                 `;
                 
                 infoDiv.innerHTML = infoHTML;
@@ -556,6 +572,99 @@
             return result;
         }
 
+        // Helper function to divide an expression by a coefficient
+        function divideExpression(expr, divisor) {
+            // Parse the expression to extract slope and intercept terms
+            // Then divide each by the divisor
+            
+            // This is a simplified approach - parse as linear equation
+            let slope = 0;
+            let intercept = 0;
+            
+            // Replace * with empty
+            expr = expr.replace(/\*/g, '');
+            
+            if (expr.includes('x')) {
+                const xParts = expr.split('x');
+                const beforeX = xParts[0];
+                const afterX = xParts[1];
+                
+                // Parse slope
+                if (beforeX === '' || beforeX === '+') {
+                    slope = 1;
+                } else if (beforeX === '-') {
+                    slope = -1;
+                } else {
+                    slope = evaluateExpression(beforeX);
+                }
+                
+                // Parse intercept
+                if (afterX === '') {
+                    intercept = 0;
+                } else {
+                    intercept = evaluateExpression(afterX);
+                }
+            } else {
+                // No x, just a constant
+                intercept = evaluateExpression(expr);
+                slope = 0;
+            }
+            
+            // Divide both by the divisor
+            slope = slope / divisor;
+            intercept = intercept / divisor;
+            
+            // Reconstruct as expression
+            let result = '';
+            
+            // Format slope
+            if (slope === 1) {
+                result = 'x';
+            } else if (slope === -1) {
+                result = '-x';
+            } else if (slope !== 0) {
+                // Keep as fraction if it simplifies nicely
+                const slopeStr = formatAsFraction(slope);
+                result = slopeStr + 'x';
+            }
+            
+            // Format intercept
+            if (intercept !== 0) {
+                if (intercept > 0) {
+                    result += '+' + formatAsFraction(intercept);
+                } else {
+                    result += formatAsFraction(intercept);
+                }
+            } else if (slope === 0) {
+                result = '0';
+            }
+            
+            return result;
+        }
+        
+        // Helper function to format a number as a fraction if appropriate
+        function formatAsFraction(num) {
+            // Check if it's already an integer
+            if (Number.isInteger(num)) {
+                return num.toString();
+            }
+            
+            // For common fractions, display as fraction
+            const tolerance = 0.0001;
+            for (let denominator = 2; denominator <= 12; denominator++) {
+                for (let numerator = -12 * denominator; numerator <= 12 * denominator; numerator++) {
+                    if (Math.abs(num - numerator/denominator) < tolerance) {
+                        if (numerator === denominator) return '1';
+                        if (numerator === -denominator) return '-1';
+                        return numerator + '/' + denominator;
+                    }
+                }
+            }
+            
+            // Otherwise return decimal rounded to 4 places
+            return (Math.round(num * 10000) / 10000).toString();
+        }
+
         function parseLinearEquation(equation) {
             // Remove spaces
             equation = equation.replace(/\s+/g, '');
@@ -565,34 +674,67 @@
             let originalEquation = equation;
             let originalRight = '';
             let convertedEquation = '';
+            let conversionSteps = [];
             
-            // Handle -y= case by converting to y= (multiply both sides by -1)
-            if (equation.startsWith('-y=')) {
-                converted = true;
-                // Extract the right side after -y=
-                const rightSide = equation.substring(3);
-                originalRight = rightSide;
-                
-                // Negate the entire right side expression
-                let negatedRight = negateExpression(rightSide);
-                
-                // Reconstruct as y=
-                equation = 'y=' + negatedRight;
-                convertedEquation = equation;
+            // Check if equation contains '='
+            if (!equation.includes('=')) {
+                return { valid: false, error: 'Equation must contain "="', converted: false };
             }
             
-            // Check if it contains 'y='
-            if (!equation.includes('y=')) {
-                return { valid: false, error: 'Equation must contain "y="' };
-            }
-
             // Split by '='
-            const parts = equation.split('=');
-            if (parts.length !== 2 || parts[0] !== 'y') {
-                return { valid: false, error: 'Left side must be "y"' };
+            let parts = equation.split('=');
+            if (parts.length !== 2) {
+                return { valid: false, error: 'Invalid equation format', converted: false };
+            }
+            
+            let leftSide = parts[0];
+            let rightSide = parts[1];
+            
+            // Parse the left side to extract coefficient of y
+            // Valid forms: y, -y, 2y, -3y, etc.
+            let yCoefficient = 1;
+            
+            if (leftSide === 'y') {
+                yCoefficient = 1;
+            } else if (leftSide === '-y') {
+                yCoefficient = -1;
+            } else if (leftSide.endsWith('y')) {
+                // Extract the coefficient part
+                const coeffPart = leftSide.substring(0, leftSide.length - 1);
+                yCoefficient = evaluateExpression(coeffPart);
+                
+                if (isNaN(yCoefficient)) {
+                    return { valid: false, error: 'Invalid coefficient for y', converted: false };
+                }
+            } else {
+                return { valid: false, error: 'Left side must be in the form of "ay" where a is a number', converted: false };
+            }
+            
+            // If coefficient is not 1, we need to divide both sides
+            if (yCoefficient !== 1) {
+                converted = true;
+                originalRight = rightSide;
+                conversionSteps.push(`Original: <strong>${originalEquation}</strong>`);
+                conversionSteps.push(`Divide both sides by ${yCoefficient}:`);
+                conversionSteps.push(`&nbsp;&nbsp;&nbsp;<strong>y = (${rightSide}) ÷ ${yCoefficient}</strong>`);
+                
+                // Divide the right side by the coefficient
+                rightSide = divideExpression(rightSide, yCoefficient);
+                
+                equation = 'y=' + rightSide;
+                convertedEquation = equation;
+                conversionSteps.push(`Simplified: <strong>${equation}</strong>`);
+            }
+            
+            // Now continue with standard parsing
+            parts = equation.split('=');
+            leftSide = parts[0];
+            
+            if (leftSide !== 'y') {
+                return { valid: false, error: 'After conversion, left side must be "y"', converted: false };
             }
 
-            const rightSide = parts[1];
+            rightSide = parts[1];
 
             // Parse the right side to extract slope and intercept
             // Valid linear forms: mx+b, mx-b, m*x+b, m*x-b, x+b, x-b, mx, x, b
@@ -655,7 +797,8 @@
                     converted,
                     originalEquation,
                     originalRight,
-                    convertedEquation
+                    convertedEquation,
+                    conversionSteps
                 };
             } catch (e) {
                 return { valid: false, error: 'Could not parse equation', converted: false };
