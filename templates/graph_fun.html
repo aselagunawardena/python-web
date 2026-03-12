@@ -136,6 +136,32 @@
             color: #4facfe;
             margin-right: 2px;
         }
+        .coordinate-pair.with-working {
+            flex-direction: column;
+            align-items: flex-start;
+            line-height: 1.6;
+        }
+        .coordinate-pair .working-steps {
+            color: #a0a0a0;
+            font-size: 12px;
+            margin-top: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .show-working-control {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .show-working-control input[type="checkbox"] {
+            cursor: pointer;
+        }
+        .show-working-control label {
+            color: #ccc;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
@@ -225,6 +251,10 @@
             </div>
             <div class="coordinates-table" id="coordinatesTable" style="display: none;">
                 <h4>📍 Coordinate Points (10 samples)</h4>
+                <div class="show-working-control">
+                    <input type="checkbox" id="showWorkingCheckbox" onchange="updateCoordinateDisplay()">
+                    <label for="showWorkingCheckbox">Show working (calculations)</label>
+                </div>
                 <div class="coordinates-display" id="coordinatesDisplay">
                 </div>
             </div>
@@ -377,6 +407,40 @@
             }
         }
 
+        // Global state for equation
+        let currentEquation = { slope: 0, intercept: 0, samplePoints: [] };
+
+        function updateCoordinateDisplay() {
+            const showWorking = document.getElementById('showWorkingCheckbox').checked;
+            const coordinatesDisplay = document.getElementById('coordinatesDisplay');
+            const { slope, intercept, samplePoints } = currentEquation;
+
+            if (showWorking) {
+                // Show working with calculation steps
+                coordinatesDisplay.innerHTML = samplePoints.map(point => {
+                    const calculation = slope * point.x + intercept;
+                    const slopeStr = slope >= 0 ? slope : `(${slope})`;
+                    const interceptStr = intercept >= 0 ? `+ ${intercept}` : `- ${Math.abs(intercept)}`;
+                    
+                    return `
+                        <div class="coordinate-pair with-working">
+                            <div><strong>x=${point.x}:</strong></div>
+                            <div class="working-steps">y = ${slopeStr}(${point.x}) ${interceptStr}</div>
+                            <div class="working-steps">y = ${Math.round(slope * point.x * 100) / 100} ${interceptStr}</div>
+                            <div class="working-steps">y = ${point.y}</div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                // Show simple coordinate pairs
+                coordinatesDisplay.innerHTML = samplePoints.map(point => `
+                    <div class="coordinate-pair">
+                        <strong>x:</strong>${point.x} <strong>y:</strong>${point.y}
+                    </div>
+                `).join('');
+            }
+        }
+
         function plotEquation(slope, intercept) {
             const chartWrapper = document.getElementById('equationChartWrapper');
             const coordinatesTable = document.getElementById('coordinatesTable');
@@ -394,12 +458,11 @@
                 });
             }
 
-            // Populate coordinates display horizontally
-            coordinatesDisplay.innerHTML = samplePoints.map(point => `
-                <div class="coordinate-pair">
-                    <strong>x:</strong>${point.x} <strong>y:</strong>${point.y}
-                </div>
-            `).join('');
+            // Store current equation data globally
+            currentEquation = { slope, intercept, samplePoints };
+
+            // Populate coordinates display
+            updateCoordinateDisplay();
 
             // Calculate points for the line chart
             const xMin = -10;
