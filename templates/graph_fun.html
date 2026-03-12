@@ -236,6 +236,29 @@
         // Global chart references
         let equationChartInstance = null;
 
+        // Helper function to evaluate mathematical expressions with division and multiplication
+        function evaluateExpression(expr) {
+            if (!expr) return NaN;
+            
+            try {
+                // Handle division: split by / and multiply/divide
+                const parts = expr.split('/');
+                let result = parseFloat(parts[0]);
+                
+                if (isNaN(result)) return NaN;
+                
+                for (let i = 1; i < parts.length; i++) {
+                    const divisor = parseFloat(parts[i]);
+                    if (isNaN(divisor) || divisor === 0) return NaN;
+                    result /= divisor;
+                }
+                
+                return result;
+            } catch (e) {
+                return NaN;
+            }
+        }
+
         // Linear Equation Validator
 
         function validateEquation() {
@@ -320,9 +343,9 @@
                     } else if (beforeX === '-') {
                         slope = -1;
                     } else {
-                        slope = parseFloat(beforeX);
+                        slope = evaluateExpression(beforeX);
                         if (isNaN(slope)) {
-                            return { valid: false, error: 'Invalid coefficient for x' };
+                            return { valid: false, error: 'Invalid coefficient for x (e.g., use 1/2 for fractions)' };
                         }
                     }
 
@@ -330,14 +353,14 @@
                     if (afterX === '') {
                         intercept = 0;
                     } else {
-                        intercept = parseFloat(afterX);
+                        intercept = evaluateExpression(afterX);
                         if (isNaN(intercept)) {
                             return { valid: false, error: 'Invalid intercept value' };
                         }
                     }
                 } else {
                     // No x, must be just a constant (valid linear with slope 0)
-                    intercept = parseFloat(expr);
+                    intercept = evaluateExpression(expr);
                     if (isNaN(intercept)) {
                         return { valid: false, error: 'Invalid constant value' };
                     }
@@ -398,6 +421,78 @@
             }
 
             const ctx = canvas.getContext('2d');
+            
+            // Custom plugin to draw axes
+            const axesPlugin = {
+                id: 'axesPlugin',
+                afterDatasetsDraw(chart) {
+                    const ctx = chart.ctx;
+                    const xScale = chart.scales.x;
+                    const yScale = chart.scales.y;
+                    const chartArea = chart.chartArea;
+                    
+                    // Get pixel positions for x=0 and y=0
+                    let x0Pixel, y0Pixel;
+                    
+                    // For x-axis: find the position of 0 in the labels
+                    const labels = chart.data.labels;
+                    let zeroIndex = -1;
+                    
+                    // Find which label represents 0
+                    for (let i = 0; i < labels.length; i++) {
+                        if (Math.abs(parseFloat(labels[i]) - 0) < 0.01) {
+                            zeroIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    if (zeroIndex !== -1) {
+                        // Use the index to get the pixel position
+                        x0Pixel = xScale.getPixelForValue(zeroIndex);
+                    }
+                    
+                    console.log('zeroIndex:', zeroIndex, 'x0Pixel:', x0Pixel, 'chartArea:', chartArea);
+                    
+                    // For y-axis: calculate based on the data range
+                    const yMin = Math.min(...chart.data.datasets[0].data.filter(v => v !== null));
+                    const yMax = Math.max(...chart.data.datasets[0].data.filter(v => v !== null));
+                    const yRange = yMax - yMin;
+                    y0Pixel = chartArea.bottom - ((0 - yMin) / yRange) * chartArea.height;
+                    
+                    console.log('yMin:', yMin, 'yMax:', yMax, 'y0Pixel:', y0Pixel);
+                    
+                    // Draw y-axis (vertical line at x = 0)
+                    if (x0Pixel !== undefined) {
+                        console.log('Drawing vertical line at x0Pixel:', x0Pixel);
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(x0Pixel, chartArea.top);
+                        ctx.lineTo(x0Pixel, chartArea.bottom);
+                        ctx.stroke();
+                    }
+                    
+                    // Draw x-axis (horizontal line at y = 0)
+                    if (y0Pixel !== undefined && y0Pixel >= chartArea.top && y0Pixel <= chartArea.bottom) {
+                        console.log('Drawing horizontal line at y0Pixel:', y0Pixel);
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(chartArea.left, y0Pixel);
+                        ctx.lineTo(chartArea.right, y0Pixel);
+                        ctx.stroke();
+                    }
+                    
+                    // Mark the origin (if both axes are visible)
+                    if (x0Pixel !== undefined && y0Pixel !== undefined) {
+                        ctx.fillStyle = '#ffd600';
+                        ctx.beginPath();
+                        ctx.arc(x0Pixel, y0Pixel, 4, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                }
+            };
+            
             equationChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -423,7 +518,8 @@
                     plugins: {
                         legend: {
                             labels: { color: '#fff' }
-                        }
+                        },
+                        axesPlugin: {}
                     },
                     scales: {
                         y: {
@@ -435,7 +531,8 @@
                             grid: { color: 'rgba(255, 255, 255, 0.1)' }
                         }
                     }
-                }
+                },
+                plugins: [axesPlugin]
             });
 
             chartWrapper.style.display = 'block';
