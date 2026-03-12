@@ -26,8 +26,13 @@
         }
         .chart-wrapper {
             position: relative;
-            height: 300px;
-            margin-bottom: 15px;
+            width: 600px;
+            height: 600px;
+            max-width: 100%;
+            margin: 0 auto 30px auto;
+        }
+        .chart-wrapper canvas {
+            margin-top: 10px;
         }
         .controls {
             display: flex;
@@ -105,11 +110,12 @@
             display: block;
         }
         .coordinates-table {
-            margin-top: 20px;
+            margin-top: 140px;
             padding: 14px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 6px;
             overflow-x: auto;
+            clear: both;
         }
         .coordinates-table h4 {
             margin: 0 0 12px 0;
@@ -161,6 +167,52 @@
             font-size: 13px;
             cursor: pointer;
             user-select: none;
+        }
+        .axis-range-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .axis-range-controls .range-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .axis-range-controls label {
+            color: #ccc;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .axis-range-controls input[type="number"] {
+            width: 70px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 13px;
+        }
+        .axis-range-controls input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .axis-range-controls button {
+            padding: 6px 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s;
+        }
+        .axis-range-controls button:hover {
+            background: #764ba2;
         }
     </style>
 </head>
@@ -247,6 +299,22 @@
             <div class="validation-result" id="validationResult"></div>
             <div class="equation-info" id="equationInfo"></div>
             <div class="chart-wrapper" id="equationChartWrapper" style="display: none;">
+                <div class="axis-range-controls">
+                    <div class="range-group">
+                        <label>X-axis:</label>
+                        <input type="number" id="xMin" value="-10" step="1">
+                        <span style="color: #ccc;">to</span>
+                        <input type="number" id="xMax" value="10" step="1">
+                    </div>
+                    <div class="range-group">
+                        <label>Y-axis:</label>
+                        <input type="number" id="yMin" value="-20" step="1">
+                        <span style="color: #ccc;">to</span>
+                        <input type="number" id="yMax" value="20" step="1">
+                    </div>
+                    <button onclick="updateGraphRange()">Update Range</button>
+                    <button onclick="resetGraphRange()">Reset</button>
+                </div>
                 <canvas id="equationChart"></canvas>
             </div>
             <div class="coordinates-table" id="coordinatesTable" style="display: none;">
@@ -410,6 +478,20 @@
         // Global state for equation
         let currentEquation = { slope: 0, intercept: 0, samplePoints: [] };
 
+        function resetGraphRange() {
+            document.getElementById('xMin').value = -10;
+            document.getElementById('xMax').value = 10;
+            document.getElementById('yMin').value = -20;
+            document.getElementById('yMax').value = 20;
+            updateGraphRange();
+        }
+
+        function updateGraphRange() {
+            if (currentEquation.slope !== undefined) {
+                plotEquation(currentEquation.slope, currentEquation.intercept);
+            }
+        }
+
         function updateCoordinateDisplay() {
             const showWorking = document.getElementById('showWorkingCheckbox').checked;
             const coordinatesDisplay = document.getElementById('coordinatesDisplay');
@@ -464,19 +546,19 @@
             // Populate coordinates display
             updateCoordinateDisplay();
 
-            // Calculate points for the line chart
-            const xMin = -10;
-            const xMax = 10;
-            const points = [];
-            
-            for (let x = xMin; x <= xMax; x += 0.5) {
-                const y = slope * x + intercept;
-                points.push(y);
-            }
+            // Get custom axis ranges
+            const xMin = parseFloat(document.getElementById('xMin').value) || -10;
+            const xMax = parseFloat(document.getElementById('xMax').value) || 10;
+            const yMin = parseFloat(document.getElementById('yMin').value) || -20;
+            const yMax = parseFloat(document.getElementById('yMax').value) || 20;
 
-            const labels = [];
-            for (let x = xMin; x <= xMax; x += 0.5) {
-                labels.push(x.toFixed(1));
+            // Calculate points for the line chart (use small step for smooth line)
+            const points = [];
+            const dataStep = (xMax - xMin) / 100; // More points for smoother line
+            
+            for (let x = xMin; x <= xMax; x += dataStep) {
+                const y = slope * x + intercept;
+                points.push({ x: x, y: y });
             }
 
             if (equationChartInstance) {
@@ -494,39 +576,12 @@
                     const yScale = chart.scales.y;
                     const chartArea = chart.chartArea;
                     
-                    // Get pixel positions for x=0 and y=0
-                    let x0Pixel, y0Pixel;
+                    // Get pixel positions for x=0 and y=0 using linear scale
+                    const x0Pixel = xScale.getPixelForValue(0);
+                    const y0Pixel = yScale.getPixelForValue(0);
                     
-                    // For x-axis: find the position of 0 in the labels
-                    const labels = chart.data.labels;
-                    let zeroIndex = -1;
-                    
-                    // Find which label represents 0
-                    for (let i = 0; i < labels.length; i++) {
-                        if (Math.abs(parseFloat(labels[i]) - 0) < 0.01) {
-                            zeroIndex = i;
-                            break;
-                        }
-                    }
-                    
-                    if (zeroIndex !== -1) {
-                        // Use the index to get the pixel position
-                        x0Pixel = xScale.getPixelForValue(zeroIndex);
-                    }
-                    
-                    console.log('zeroIndex:', zeroIndex, 'x0Pixel:', x0Pixel, 'chartArea:', chartArea);
-                    
-                    // For y-axis: calculate based on the data range
-                    const yMin = Math.min(...chart.data.datasets[0].data.filter(v => v !== null));
-                    const yMax = Math.max(...chart.data.datasets[0].data.filter(v => v !== null));
-                    const yRange = yMax - yMin;
-                    y0Pixel = chartArea.bottom - ((0 - yMin) / yRange) * chartArea.height;
-                    
-                    console.log('yMin:', yMin, 'yMax:', yMax, 'y0Pixel:', y0Pixel);
-                    
-                    // Draw y-axis (vertical line at x = 0)
-                    if (x0Pixel !== undefined) {
-                        console.log('Drawing vertical line at x0Pixel:', x0Pixel);
+                    // Draw y-axis (vertical line at x = 0) if 0 is in range
+                    if (x0Pixel >= chartArea.left && x0Pixel <= chartArea.right) {
                         ctx.strokeStyle = '#fff';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
@@ -535,9 +590,8 @@
                         ctx.stroke();
                     }
                     
-                    // Draw x-axis (horizontal line at y = 0)
-                    if (y0Pixel !== undefined && y0Pixel >= chartArea.top && y0Pixel <= chartArea.bottom) {
-                        console.log('Drawing horizontal line at y0Pixel:', y0Pixel);
+                    // Draw x-axis (horizontal line at y = 0) if 0 is in range
+                    if (y0Pixel >= chartArea.top && y0Pixel <= chartArea.bottom) {
                         ctx.strokeStyle = '#fff';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
@@ -547,7 +601,8 @@
                     }
                     
                     // Mark the origin (if both axes are visible)
-                    if (x0Pixel !== undefined && y0Pixel !== undefined) {
+                    if (x0Pixel >= chartArea.left && x0Pixel <= chartArea.right &&
+                        y0Pixel >= chartArea.top && y0Pixel <= chartArea.bottom) {
                         ctx.fillStyle = '#ffd600';
                         ctx.beginPath();
                         ctx.arc(x0Pixel, y0Pixel, 4, 0, 2 * Math.PI);
@@ -559,7 +614,6 @@
             equationChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
                     datasets: [{
                         label: `y = ${slope}x ${intercept >= 0 ? '+' : ''} ${intercept}`,
                         data: points,
@@ -570,14 +624,15 @@
                         fill: true,
                         pointBackgroundColor: '#00f2fe',
                         pointBorderColor: '#4facfe',
-                        pointRadius: 3,
+                        pointRadius: 0,
                         pointHoverRadius: 5,
                         pointHoverBackgroundColor: '#ffd600'
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1,
                     plugins: {
                         legend: {
                             labels: { color: '#fff' }
@@ -586,11 +641,24 @@
                     },
                     scales: {
                         y: {
-                            ticks: { color: '#fff' },
+                            type: 'linear',
+                            min: yMin,
+                            max: yMax,
+                            ticks: { 
+                                color: '#fff',
+                                stepSize: 1
+                            },
                             grid: { color: 'rgba(255, 255, 255, 0.1)' }
                         },
                         x: {
-                            ticks: { color: '#fff' },
+                            type: 'linear',
+                            min: xMin,
+                            max: xMax,
+                            ticks: { 
+                                color: '#fff',
+                                stepSize: 1,
+                                maxTicksLimit: 20
+                            },
                             grid: { color: 'rgba(255, 255, 255, 0.1)' }
                         }
                     }
