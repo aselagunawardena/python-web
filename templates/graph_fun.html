@@ -214,6 +214,90 @@
         .axis-range-controls button:hover {
             background: #764ba2;
         }
+        
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            .graph-container {
+                padding: 15px;
+            }
+            
+            .chart-wrapper {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1;
+            }
+            
+            .equation-input-group {
+                flex-direction: column;
+            }
+            
+            .equation-input-group input {
+                min-width: 100%;
+            }
+            
+            .equation-input-group button {
+                width: 100%;
+            }
+            
+            .axis-range-controls {
+                gap: 10px;
+            }
+            
+            .axis-range-controls .range-group {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+            
+            .axis-range-controls input[type="number"] {
+                width: 100%;
+            }
+            
+            .axis-range-controls button {
+                width: 100%;
+            }
+            
+            .coordinates-table {
+                margin-top: 60px;
+            }
+            
+            .coordinate-pair {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+        }
+        
+        @media screen and (max-width: 480px) {
+            .graph-container {
+                padding: 10px;
+                margin: 20px auto;
+            }
+            
+            .graph-card {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .graph-card h3 {
+                font-size: 16px;
+            }
+            
+            .coordinates-table {
+                margin-top: 40px;
+            }
+            
+            .coordinates-display {
+                gap: 8px;
+            }
+            
+            .coordinate-pair {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+        }
     </style>
 </head>
 <body>
