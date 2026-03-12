@@ -467,12 +467,29 @@
                 resultDiv.classList.add('valid');
                 
                 infoDiv.classList.add('show');
-                infoDiv.innerHTML = `
+                let infoHTML = '';
+                
+                // Show conversion steps if equation was converted
+                if (result.converted) {
+                    infoHTML += `
+                        <strong>⚙️ Conversion Steps:</strong><br>
+                        <div style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin: 8px 0; line-height: 1.8;">
+                            1. Original: <strong>${result.originalEquation}</strong><br>
+                            2. Multiply both sides by -1:<br>
+                            &nbsp;&nbsp;&nbsp;<strong>-1 × (-y) = -1 × (${result.originalRight})</strong><br>
+                            3. Simplified: <strong>${result.convertedEquation}</strong>
+                        </div>
+                    `;
+                }
+                
+                infoHTML += `
                     <strong>Equation Details:</strong><br>
                     Slope (m): <strong>${result.slope}</strong><br>
                     Y-intercept (b): <strong>${result.intercept}</strong><br>
                     Form: <strong>y = ${result.slope}x ${result.intercept >= 0 ? '+' : ''} ${result.intercept}</strong>
                 `;
+                
+                infoDiv.innerHTML = infoHTML;
 
                 // Plot the equation
                 plotEquation(result.slope, result.intercept);
@@ -482,9 +499,87 @@
             }
         }
 
+        // Helper function to negate a term
+        function negateTerm(term, isFirst) {
+            // Remove leading + or -
+            let sign = '';
+            let value = term;
+            
+            if (term.startsWith('+')) {
+                sign = '-';
+                value = term.substring(1);
+            } else if (term.startsWith('-')) {
+                sign = '+';
+                value = term.substring(1);
+            } else {
+                // No explicit sign means positive
+                sign = '-';
+                value = term;
+            }
+            
+            // For the first term, don't add + sign
+            if (isFirst && sign === '+') {
+                return value;
+            }
+            
+            return sign + value;
+        }
+
+        // Helper function to negate an expression
+        function negateExpression(expr) {
+            // This function negates each term in the expression
+            // For example: "x-10" becomes "-x+10", "2x+5" becomes "-2x-5"
+            
+            let result = '';
+            let currentTerm = '';
+            let lastWasOperator = true;
+            
+            for (let i = 0; i < expr.length; i++) {
+                const char = expr[i];
+                
+                if ((char === '+' || char === '-') && !lastWasOperator && currentTerm.length > 0) {
+                    // We've hit a new term, process the previous one
+                    result += negateTerm(currentTerm, result.length === 0);
+                    currentTerm = char;
+                    lastWasOperator = true;
+                } else {
+                    currentTerm += char;
+                    lastWasOperator = false;
+                }
+            }
+            
+            // Process the last term
+            if (currentTerm.length > 0) {
+                result += negateTerm(currentTerm, result.length === 0);
+            }
+            
+            return result;
+        }
+
         function parseLinearEquation(equation) {
             // Remove spaces
             equation = equation.replace(/\s+/g, '');
+            
+            // Track if conversion happened
+            let converted = false;
+            let originalEquation = equation;
+            let originalRight = '';
+            let convertedEquation = '';
+            
+            // Handle -y= case by converting to y= (multiply both sides by -1)
+            if (equation.startsWith('-y=')) {
+                converted = true;
+                // Extract the right side after -y=
+                const rightSide = equation.substring(3);
+                originalRight = rightSide;
+                
+                // Negate the entire right side expression
+                let negatedRight = negateExpression(rightSide);
+                
+                // Reconstruct as y=
+                equation = 'y=' + negatedRight;
+                convertedEquation = equation;
+            }
             
             // Check if it contains 'y='
             if (!equation.includes('y=')) {
@@ -553,9 +648,17 @@
                 slope = Math.round(slope * 10000) / 10000;
                 intercept = Math.round(intercept * 10000) / 10000;
 
-                return { valid: true, slope, intercept };
+                return { 
+                    valid: true, 
+                    slope, 
+                    intercept,
+                    converted,
+                    originalEquation,
+                    originalRight,
+                    convertedEquation
+                };
             } catch (e) {
-                return { valid: false, error: 'Could not parse equation' };
+                return { valid: false, error: 'Could not parse equation', converted: false };
             }
         }
 
